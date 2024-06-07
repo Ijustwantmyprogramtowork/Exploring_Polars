@@ -7,7 +7,7 @@ To really understand the differences between those librairies, I needed to uders
 
 ## Part 1: The structure of polars
 
-![polars](/OIP.JPG)
+![polars](/OIP.jpg)
 
 
 
