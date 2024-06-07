@@ -112,9 +112,11 @@ For a simple read_parquet, we have actually pandas with an arrow backend that is
 ![read_parquet](/pictures/read_parquet.png)
 
 But If you go into something more complicated, like if you try to load multiple files in a folder, polars is 5 times quicker than pandas and is faster than pandas_arrow.
+
 ![sophisticated](/pictures/glob.png)
 
 for a complex group_by function ( the function in example_lazy_1.ipynb ), we can see that polars is actually 5 times faster than pandas, and 3 time quicker than pandas with an arrow backend.
+
 ![group_by](/pictures/group_by.png)
 
 ### Also, I would like to make a quick point on how polars fosters method chaining. 
