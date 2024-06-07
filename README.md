@@ -7,7 +7,7 @@ To really understand the differences between those librairies, I needed to uders
 
 ## Part 1: The structure of polars
 
-![polars](/C://Users//thais//Desktop//OIP.JPG)
+![polars](/OIP.JPG)
 
 
 
@@ -110,7 +110,7 @@ I put some example of the difference of execution speed using polars in example_
 
 ### Also, I would like to make a quick point on how polars fosters method chaining. 
 
-![polars](/C://Users//thais//Desktop//method.png)
+![polars](/method.png)
 
 In this example ( that is example_lazy_1.ipynb ), you can see how the written structure of polars is really slender and is pushing you to use method chaining.
 Because, in pandas, you have 1000 ways to write the same things with different functions, you can easely find yourself lost.
