@@ -109,10 +109,13 @@ You could see in example_lazy_1.ipynb what ressembles a quary plan. You can see 
 I put some example of the difference of execution speed using polars in example_2.ipynb. 
 But I actually did some comparaisons with pandas and polars with a dataset I was already using with 34 millions rows that I just split into different size to really compare the efficiency of the library on multiple sizes.
 For a simple read_parquet, we have actually pandas with an arrow backend that is the quickest. But for memory usage, it is polars that is more efficient.
+![read_parquet](/pictures/read_parquet.png)
 
 But If you go into something more complicated, like if you try to load multiple files in a folder, polars is 5 times quicker than pandas and is faster than pandas_arrow.
+![sophisticated](/pictures/glob.png)
 
 for a complex group_by function ( the function in example_lazy_1.ipynb ), we can see that polars is actually 5 times faster than pandas, and 3 time quicker than pandas with an arrow backend.
+![group_by](/pictures/group_by.png)
 
 ### Also, I would like to make a quick point on how polars fosters method chaining. 
 
