@@ -105,7 +105,7 @@ You could see in example_lazy_1.ipynb what ressembles a quary plan. You can see 
 
 
 ## Part 3 : Admire that speed
-![Flash](/C://Users//thais//Desktop//flash.avif)
+![Flash](/flash.avif)
 I put some example of the difference of execution speed using polars in example_2.ipynb. You can see for yourself the difference.
 
 ### Also, I would like to make a quick point on how polars fosters method chaining. 
