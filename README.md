@@ -46,7 +46,7 @@ So, if you need to CPU to, let's say, do an operation on the first column, it wi
 Therefore, it takes space in the cache to load all of your data in you memory list. And some of the datas that is not used can be evicted from the cache to quickly, leading to more cache misses when you'll need them in the future.
 __Row storage maximizes cache miss.__
 
-__for column storage__, you have then: 
+__for column storage__, you have then:
 ```
 Column A: [A1, A2, A3, ...]
 Column B: [B1, B2, B3, ...]
@@ -79,10 +79,10 @@ In Rust, lifetimes are explicitly annotated in function signatures and data stru
 
 Mores infos here : { [Memory Address](https://www.w3schools.com/c/c_memory_address.php)
 
- [Pointers](https://www.w3schools.com/c/c_pointers.php) 
- 
+ [Pointers](https://www.w3schools.com/c/c_pointers.php)
+
   [Really Nice Stack Overflow discussion about C memory management](https://stackoverflow.com/questions/24891/c-memory-management)
-  
+
   [How Rust manages memory](https://medium.com/geekculture/understanding-memory-management-in-rust-a341cfce9807) }
 
 
@@ -106,22 +106,92 @@ You could see in example_lazy_1.ipynb what ressembles a quary plan. You can see 
 
 ## Part 3 : Admire that speed
 ![Flash](/pictures/flash.avif)
-I put some example of the difference of execution speed using polars in example_2.ipynb. 
+I put some example of the difference of execution speed using polars in example_2.ipynb.
 But I actually did some comparaisons with pandas and polars with a dataset I was already using with 34 millions rows that I just split into different size to really compare the efficiency of the library on multiple sizes.
 For a simple read_parquet, we have actually pandas with an arrow backend that is the quickest. But for memory usage, it is polars that is more efficient.
 ![read_parquet](/pictures/read_parquet.png)
 
 But If you go into something more complicated, like if you try to load multiple files in a folder, polars is 5 times quicker than pandas and is faster than pandas_arrow.
 
-![sophisticated](/pictures/glob.png)
+```python
+%%time
+# load SWI with pandas, backend pyarrow
+dfs = []
+
+for filename in glob.glob("data/SWI_Package_1969-2022/*.csv"):
+    df = (
+        pd.read_csv(filename, sep=";", decimal=",", dtype_backend="pyarrow")
+        .assign(DATE=lambda df_: pd.to_datetime(df_["DATE"], format="%Y%m"))
+        .loc[lambda df_: df_.DATE.dt.year >= 2006]
+    )
+    dfs.append(df)
+
+swi_pd = pd.concat(dfs)
+swi_pd.shape
+
+# CPU times: user 9.04 s, sys: 238 ms, total: 9.28 s
+# Wall time: 9.31 s
+
+%%time
+# load SWI with pandas
+dfs = []
+
+for filename in glob.glob("data/SWI_Package_1969-2022/*.csv"):
+    df = (
+        pd.read_csv(filename, sep=";", decimal=",")
+        .assign(DATE=lambda df_: pd.to_datetime(df_["DATE"], format="%Y%m"))
+        .loc[lambda df_: df_.DATE.dt.year >= 2006]
+    )
+    dfs.append(df)
+
+swi_pd = pd.concat(dfs)
+swi_pd.shape
+
+# CPU times: user 15 s, sys: 495 ms, total: 15.5 s
+# Wall time: 15.8 s
+# (18322124, 5)
+
+%%time
+# load SWI with polars
+swi_pl = (
+    pl.scan_csv(
+        "data/SWI_Package_1969-2022/*.csv", separator=";", dtypes={"DATE": pl.String}
+    )
+    .with_columns(
+        pl.col("SWI_UNIF_MEN53").str.replace(",", ".").cast(pl.Float64),
+        pl.col("DATE").str.to_date("%Y%m"),
+    )
+    .filter(pl.col("DATE").dt.year() >= 2006)
+    .collect()
+)
+
+# CPU times: user 2.99 s, sys: 154 ms, total: 3.14 s
+# Wall time: 681 ms
+```
 
 for a complex group_by function ( the function in example_lazy_1.ipynb ), we can see that polars is actually 5 times faster than pandas, and 3 time quicker than pandas with an arrow backend.
 
 ![group_by](/pictures/group_by.png)
 
-### Also, I would like to make a quick point on how polars fosters method chaining. 
+### Also, I would like to make a quick point on how polars fosters method chaining.
 
-![polars](/pictures/method.png)
+```python
+df = (
+    pl.scan_parquet("new_gps.parquet")
+    .with_columns(pl.from_epoch(pl.col("timestamp"), "ms"))
+    # truncate it by the hour
+    .with_columns(pl.col("timestamp").dt.truncate("1h"))
+    # Then group_by by the hour and calculate the mean, the max and min of the speed column
+    .group_by(pl.col("timestamp"))
+    .agg(
+        pl.col("speed").mean().alias("mean_speed"),
+        pl.col("speed").min().alias("min_speed"),
+        pl.col("speed").max().alias("max_speed"),
+    )
+    # Filter for hour > 4
+    .filter(pl.col("timestamp") > 4)
+)
+```
 
 In this example ( that is example_lazy_1.ipynb ), you can see how the written structure of polars is really slender and is pushing you to use method chaining.
 Because, in pandas, you have 1000 ways to write the same things with different functions, you can easely find yourself lost.
@@ -129,19 +199,3 @@ In polars, you don't have that much variability in your syntaxe, which makes it 
 
 ## Ok I think I said everything I had to say.
 Thank you!
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
