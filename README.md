@@ -115,50 +115,58 @@ But If you go into something more complicated, like if you try to load multiple 
 
 ```python
 %%time
-# load SWI with pandas
+# load SWI with pandas, backend pyarrow
 dfs = []
 
 for filename in glob.glob("data/SWI_Package_1969-2022/*.csv"):
-    df = (pd.read_csv(filename, sep=";", decimal=",", dtype_backend='pyarrow')
-          .assign(DATE=lambda df_: pd.to_datetime(df_['DATE'], format="%Y%m"))
-          .loc[lambda df_: df_.DATE.dt.year >= 2006]
-         )
+    df = (
+        pd.read_csv(filename, sep=";", decimal=",", dtype_backend="pyarrow")
+        .assign(DATE=lambda df_: pd.to_datetime(df_["DATE"], format="%Y%m"))
+        .loc[lambda df_: df_.DATE.dt.year >= 2006]
+    )
     dfs.append(df)
 
 swi_pd = pd.concat(dfs)
 swi_pd.shape
 
-CPU times: user 9.04 s, sys: 238 ms, total: 9.28 s
-Wall time: 9.31 s
+# CPU times: user 9.04 s, sys: 238 ms, total: 9.28 s
+# Wall time: 9.31 s
 
 %%time
 # load SWI with pandas
 dfs = []
 
 for filename in glob.glob("data/SWI_Package_1969-2022/*.csv"):
-    df = (pd.read_csv(filename, sep=";", decimal=",")
-          .assign(DATE=lambda df_: pd.to_datetime(df_['DATE'], format="%Y%m"))
-          .loc[lambda df_: df_.DATE.dt.year >= 2006]
-         )
+    df = (
+        pd.read_csv(filename, sep=";", decimal=",")
+        .assign(DATE=lambda df_: pd.to_datetime(df_["DATE"], format="%Y%m"))
+        .loc[lambda df_: df_.DATE.dt.year >= 2006]
+    )
     dfs.append(df)
 
 swi_pd = pd.concat(dfs)
 swi_pd.shape
 
-CPU times: user 15 s, sys: 495 ms, total: 15.5 s
-Wall time: 15.8 s
-(18322124, 5)
+# CPU times: user 15 s, sys: 495 ms, total: 15.5 s
+# Wall time: 15.8 s
+# (18322124, 5)
 
-swi_pl = (pl
-    .scan_csv("data/SWI_Package_1969-2022/*.csv", separator=";", dtypes={"DATE":pl.String})
-    .with_columns(pl.col("SWI_UNIF_MEN53").str.replace(",", ".").cast(pl.Float64),
-                  pl.col("DATE").str.to_date("%Y%m"))
+%%time
+# load SWI with polars
+swi_pl = (
+    pl.scan_csv(
+        "data/SWI_Package_1969-2022/*.csv", separator=";", dtypes={"DATE": pl.String}
+    )
+    .with_columns(
+        pl.col("SWI_UNIF_MEN53").str.replace(",", ".").cast(pl.Float64),
+        pl.col("DATE").str.to_date("%Y%m"),
+    )
     .filter(pl.col("DATE").dt.year() >= 2006)
     .collect()
 )
 
-CPU times: user 2.99 s, sys: 154 ms, total: 3.14 s
-Wall time: 681 ms
+# CPU times: user 2.99 s, sys: 154 ms, total: 3.14 s
+# Wall time: 681 ms
 ```
 
 for a complex group_by function ( the function in example_lazy_1.ipynb ), we can see that polars is actually 5 times faster than pandas, and 3 time quicker than pandas with an arrow backend.
@@ -168,19 +176,20 @@ for a complex group_by function ( the function in example_lazy_1.ipynb ), we can
 ### Also, I would like to make a quick point on how polars fosters method chaining.
 
 ```python
-df=(pl.scan_parquet('new_gps.parquet')
-    .with_columns(
-        pl.from_epoch(pl.col('timestamp'), 'ms')
-        # truncate it by the hour and filter for hour > 4
-    ).with_columns(
-        pl.col('timestamp').dt.truncate("1h")
-        # Then group_by by the hour and calculate the mean, the max and min of the speed column
-    ).group_by(pl.col('timestamp'))
-    .agg(pl.col('speed').mean().alias('mean_speed'),
-         pl.col('speed').min().alias('min_speed'),
-         pl.col('speed').max().alias('max_speed')
-         # Putting it in km/h
-    ).filter(pl.col('timestamp')>4)
+df = (
+    pl.scan_parquet("new_gps.parquet")
+    .with_columns(pl.from_epoch(pl.col("timestamp"), "ms"))
+    # truncate it by the hour
+    .with_columns(pl.col("timestamp").dt.truncate("1h"))
+    # Then group_by by the hour and calculate the mean, the max and min of the speed column
+    .group_by(pl.col("timestamp"))
+    .agg(
+        pl.col("speed").mean().alias("mean_speed"),
+        pl.col("speed").min().alias("min_speed"),
+        pl.col("speed").max().alias("max_speed"),
+    )
+    # Filter for hour > 4
+    .filter(pl.col("timestamp") > 4)
 )
 ```
 
