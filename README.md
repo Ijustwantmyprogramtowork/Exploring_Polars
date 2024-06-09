@@ -167,7 +167,22 @@ for a complex group_by function ( the function in example_lazy_1.ipynb ), we can
 
 ### Also, I would like to make a quick point on how polars fosters method chaining.
 
-![polars](/pictures/method.png)
+```python
+df=(pl.scan_parquet('new_gps.parquet')
+    .with_columns(
+        pl.from_epoch(pl.col('timestamp'), 'ms')
+        # truncate it by the hour and filter for hour > 4
+    ).with_columns(
+        pl.col('timestamp').dt.truncate("1h")
+        # Then group_by by the hour and calculate the mean, the max and min of the speed column
+    ).group_by(pl.col('timestamp'))
+    .agg(pl.col('speed').mean().alias('mean_speed'),
+         pl.col('speed').min().alias('min_speed'),
+         pl.col('speed').max().alias('max_speed')
+         # Putting it in km/h
+    ).filter(pl.col('timestamp')>4)
+)
+```
 
 In this example ( that is example_lazy_1.ipynb ), you can see how the written structure of polars is really slender and is pushing you to use method chaining.
 Because, in pandas, you have 1000 ways to write the same things with different functions, you can easely find yourself lost.
